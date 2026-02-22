@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>نظام إدارة المستشفى - نسخة HTML محلية</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+body {
+  background: #f1f5f9;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+/* ===== Sidebar احترافية ===== */
+.sidebar {
+  min-width: 240px;
+  max-width: 240px;
+  height: 100vh;
+  position: fixed;
+  right: 0;
+  top: 0;
+  padding-top: 20px;
+  background: linear-gradient(180deg, #1e293b, #0f172a);
+  color: #fff;
+  border-left: none;
+}
+
+.sidebar h4 {
+  font-weight: 600;
+  color: #fff;
+}
+
+.sidebar .small-muted {
+  color: #94a3b8;
+}
+
+.sidebar .nav-link {
+  color: #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 14px;
+  transition: .25s ease;
+}
+
+.sidebar .nav-link:hover {
+  background: rgba(255,255,255,.1);
+  color: #fff;
+}
+
+.sidebar .nav-link.active {
+  background: #3b82f6;
+  color: #fff;
+  font-weight: 500;
+}
+
+/* ===== Content ===== */
+.content {
+  margin-right: 240px;
+  padding: 30px;
+}
+
+/* ===== Cards ===== */
+.card {
+  border: 0;
+  border-radius: 18px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.05);
+  transition: .2s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+/* ===== Buttons ===== */
+.btn {
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: #2563eb;
+  border: none;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.btn-success {
+  background: #16a34a;
+  border: none;
+}
+
+.btn-success:hover {
+  background: #15803d;
+}
+
+.btn-outline-danger:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
+/* ===== Tables ===== */
+.table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table thead {
+  background: #f8fafc;
+}
+
+.table tbody tr:hover {
+  background: #f1f5f9;
+}
+
+/* ===== Views animation (بدون ما نكسر d-none) ===== */
+.view {
+  animation: fade .25s ease-in-out;
+}
+
+@keyframes fade {
+  from { opacity:0; transform:translateY(8px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+.small-muted {
+  font-size: .85rem;
+  color:#6c757d;
+}
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar d-flex flex-column">
+    <div class="px-3 mb-3">
+      <h4 class="mb-0">Hospital UI</h4>
+      <div class="small-muted">نسخة HTML - تعمل محليًا</div>
+      
+    </div>
+
+    <nav class="nav nav-pills flex-column px-2 gap-1">
+      <a class="nav-link active" data-view="dashboard" href="#">لوحة التحكم</a>
+      <a class="nav-link" data-view="patients" href="#">المرضى</a>
+      <a class="nav-link" data-view="doctors" href="#">الأطباء</a>
+      <a class="nav-link" data-view="departments" href="#">الأقسام</a>
+      <a class="nav-link" data-view="appointments" href="#">المواعيد</a>
+      <a class="nav-link" id="resetStorage" href="#">إعادة ضبط البيانات</a>
+    </nav>
+
+   <div class="mt-auto p-3 small-muted">
+  <a href="login.html" class="btn btn-sm btn-outline-primary w-100">انتقل إلى صفحة المريض</a>
+</div>
+  </div>
+
+  <!-- Main content -->
+  <div class="content">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h2 id="pageTitle">لوحة التحكم</h2>
+        <div class="small-muted" id="pageSubtitle">نظرة عامة على النظام</div>
+      </div>
+      <div>
+        <button class="btn btn-primary" id="addBtn">إضافة جديد</button>
+      </div>
+    </div>
+
+    <!-- Views -->
+    <div id="views">
+
+      <!-- Dashboard -->
+      <div id="view-dashboard" class="view">
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <div class="card p-3">
+              <h5>الإحصائيات</h5>
+              <div class="mt-2">
+                <div>المرضى: <strong id="stat-patients">0</strong></div>
+                <div>الأطباء: <strong id="stat-doctors">0</strong></div>
+                <div>الأقسام: <strong id="stat-depts">0</strong></div>
+                <div>المواعيد القادمة: <strong id="stat-ups">0</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-8">
+            <div class="card p-3">
+              <h5>قائمة المواعيد القادمة (7 أيام)</h5>
+              <div id="upcomingList" class="mt-2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patients -->
+      <div id="view-patients" class="view d-none">
+        <div class="card p-3">
+          <div class="d-flex justify-content-between mb-2">
+            <div>
+              <h5>المرضى</h5>
+              <div class="small-muted">إدارة سجلات المرضى</div>
+            </div>
+            <div class="d-flex gap-2">
+              <input id="patientsSearch" class="form-control form-control-sm" placeholder="ابحث بالاسم أو الهاتف" style="min-width:220px;">
+              <button class="btn btn-sm btn-success" id="addPatientBtn">مريض جديد</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-striped table-small align-middle" id="patientsTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>الاسم</th>
+                  <th>تاريخ الميلاد</th>
+                  <th>الهاتف</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Doctors -->
+      <div id="view-doctors" class="view d-none">
+        <div class="card p-3">
+          <div class="d-flex justify-content-between mb-2">
+            <div>
+              <h5>الأطباء</h5>
+              <div class="small-muted">قائمة الأطباء وربطهم بالأقسام</div>
+            </div>
+            <div>
+              <button class="btn btn-sm btn-success" id="addDoctorBtn">طبيب جديد</button>
+            </div>
+          </div>
+
+          <table class="table table-striped table-small align-middle" id="doctorsTable">
+            <thead>
+              <tr><th>#</th><th>الاسم</th><th>القسم</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Departments -->
+      <div id="view-departments" class="view d-none">
+        <div class="card p-3">
+          <div class="d-flex justify-content-between mb-2">
+            <div>
+              <h5>الأقسام</h5>
+              <div class="small-muted">أضف أو حرّر الأقسام في المستشفى</div>
+            </div>
+            <div>
+              <button class="btn btn-sm btn-success" id="addDeptBtn">قسم جديد</button>
+            </div>
+          </div>
+
+          <table class="table table-striped table-small" id="deptTable">
+            <thead><tr><th>#</th><th>اسم القسم</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Appointments -->
+      <div id="view-appointments" class="view d-none">
+        <div class="card p-3">
+          <div class="d-flex justify-content-between mb-2">
+            <div>
+              <h5>المواعيد</h5>
+              <div class="small-muted">إدارة المواعيد وحجزها</div>
+            </div>
+            <div class="d-flex gap-2">
+              <input id="appointmentsSearch" class="form-control form-control-sm" placeholder="ابحث باسم المريض أو الطبيب" style="min-width:240px;">
+              <button class="btn btn-sm btn-success" id="addAppointmentBtn">موعد جديد</button>
+            </div>
+          </div>
+
+          <table class="table table-striped table-small" id="appointmentsTable">
+            <thead><tr><th>#</th><th>المريض</th><th>الطبيب</th><th>الزمن</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <!-- Patient Modal -->
+  <div class="modal fade" id="patientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form class="modal-content" id="patientForm">
+        <div class="modal-header">
+          <h5 class="modal-title">إضافة/تعديل مريض</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <input type="hidden" id="patientId">
+          <div class="col-md-6">
+            <label class="form-label">الاسم الأول</label>
+            <input required id="patientFirst" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">اسم العائلة</label>
+            <input required id="patientLast" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">تاريخ الميلاد</label>
+            <input type="date" id="patientDob" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">الهاتف</label>
+            <input id="patientPhone" class="form-control">
+          </div>
+          <div class="col-12">
+            <label class="form-label">ملاحظات</label>
+            <textarea id="patientNotes" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">حفظ</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Doctor Modal -->
+  <div class="modal fade" id="doctorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <form class="modal-content" id="doctorForm">
+        <div class="modal-header"><h5 class="modal-title">إضافة/تعديل طبيب</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="doctorId">
+          <div class="mb-2"><label class="form-label">الاسم الكامل</label><input id="doctorName" required class="form-control"></div>
+          <div class="mb-2"><label class="form-label">القسم</label>
+            <select id="doctorDept" class="form-select"></select>
+          </div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary">حفظ</button><button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Department Modal -->
+  <div class="modal fade" id="deptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <form class="modal-content" id="deptForm">
+        <div class="modal-header"><h5 class="modal-title">إضافة/تعديل قسم</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="deptId">
+          <div class="mb-2"><label class="form-label">اسم القسم</label><input id="deptName" required class="form-control"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary">حفظ</button><button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Appointment Modal -->
+  <div class="modal fade" id="appointmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form class="modal-content" id="appointmentForm">
+        <div class="modal-header"><h5 class="modal-title">إضافة/تعديل موعد</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body row g-3">
+          <input type="hidden" id="appointmentId">
+          <div class="col-md-6">
+            <label class="form-label">المريض</label>
+            <select id="appointmentPatient" class="form-select" required></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">الطبيب</label>
+            <select id="appointmentDoctor" class="form-select" required></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">التاريخ والوقت</label>
+            <input type="datetime-local" id="appointmentAt" class="form-control" required />
+          </div>
+          <div class="col-12">
+            <label class="form-label">ملاحظات</label>
+            <textarea id="appointmentNotes" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary">حفظ</button><button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS + Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+  /**************************************************************************
+   * Simple SPA-like Hospital Manager (localStorage)
+   * Keys: hm_patients, hm_doctors, hm_depts, hm_appointments
+   **************************************************************************/
+
+  // ===== Utilities =====
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+  const q = (s,root=document) => root.querySelector(s);
+  const qa = (s,root=document) => Array.from(root.querySelectorAll(s));
+
+  // ===== Storage helpers =====
+  const storageKey = (k) => 'hm_' + k;
+  const load = (k) => JSON.parse(localStorage.getItem(storageKey(k)) || '[]');
+  const save = (k, arr) => localStorage.setItem(storageKey(k), JSON.stringify(arr));
+
+  // ===== Initial seed (only if empty) =====
+  function initSeed(){
+    if(!localStorage.getItem(storageKey('depts'))){
+      const depts = [
+        {id: uid(), name:'عام'},
+        {id: uid(), name:'قلب'},
+        {id: uid(), name:'أعصاب'}
+      ];
+      save('depts', depts);
+    }
+    if(!localStorage.getItem(storageKey('doctors'))){
+      const depts = load('depts');
+      const doctors = [
+        {id: uid(), fullName:'د. أحمد علي', departmentId: depts[0].id},
+        {id: uid(), fullName:'د. سارة خالد', departmentId: depts[1].id}
+      ];
+      save('doctors', doctors);
+    }
+    if(!localStorage.getItem(storageKey('patients'))){
+      const patients = [
+        {id: uid(), firstName:'منى', lastName:'صالح', dob:'1990-01-01', phone:'0550001111', notes:''},
+        {id: uid(), firstName:'عمر', lastName:'حسن', dob:'1985-05-05', phone:'0550002222', notes:''}
+      ];
+      save('patients', patients);
+    }
+    if(!localStorage.getItem(storageKey('appointments'))){
+      const patients = load('patients'), doctors = load('doctors');
+      const appointments = [
+        {id: uid(), patientId: patients[0].id, doctorId: doctors[0].id, at: new Date(Date.now()+3600*1000*24).toISOString(), notes:'فحص دوري'}
+      ];
+      save('appointments', appointments);
+    }
+  }
+
+  // ===== UI state & navigation =====
+  const views = qa('.view');
+  function showView(name){
+    views.forEach(v => v.classList.add('d-none'));
+    q('#view-' + name).classList.remove('d-none');
+    // update title/subtitle & button
+    const titles = {
+      dashboard:['لوحة التحكم','نظرة عامة على النظام'],
+      patients:['المرضى','إدارة سجلات المرضى'],
+      doctors:['الأطباء','قائمة الأطباء'],
+      departments:['الأقسام','إدارة الأقسام'],
+      appointments:['المواعيد','إدارة المواعيد وحجزها']
+    };
+    const t = titles[name] || ['',''];
+    q('#pageTitle').textContent = t[0];
+    q('#pageSubtitle').textContent = t[1];
+    // show/hide add button depending on view
+    const mapBtn = {dashboard:false, patients:'addPatientBtn', doctors:'addDoctorBtn', departments:'addDeptBtn', appointments:'addAppointmentBtn'};
+    const btnId = mapBtn[name];
+    q('#addBtn').style.display = btnId ? 'inline-block' : 'none';
+    if(btnId) q('#addBtn').onclick = () => q('#' + btnId).click();
+    // refresh data for view
+    renderAllStats();
+    if(name==='patients') renderPatientsTable();
+    if(name==='doctors') renderDoctorsTable();
+    if(name==='departments') renderDeptsTable();
+    if(name==='appointments') renderAppointmentsTable();
+  }
+
+  // Sidebar links
+  qa('.nav-link[data-view]').forEach(a => a.addEventListener('click', (e)=>{
+    e.preventDefault();
+    qa('.nav-link').forEach(x=>x.classList.remove('active'));
+    a.classList.add('active');
+    const view = a.dataset.view;
+    showView(view);
+  }));
+
+  // Reset storage
+  q('#resetStorage').addEventListener('click', (e)=>{
+    e.preventDefault();
+    if(confirm('هل تريد إعادة ضبط كل البيانات؟ (ستُحذف جميع السجلات)')) {
+      ['patients','doctors','depts','appointments'].forEach(k=>localStorage.removeItem(storageKey(k)));
+      initSeed();
+      showView('dashboard');
+    }
+  });
+
+  // ===== Patients =====
+  function renderPatientsTable(filter=''){
+    const list = load('patients');
+    const tbody = q('#patientsTable tbody');
+    tbody.innerHTML = '';
+    const filtered = list.filter(p => {
+      const full = (p.firstName + ' ' + p.lastName + ' ' + (p.phone||'')).toLowerCase();
+      return full.includes(filter.toLowerCase());
+    });
+    filtered.forEach((p,i)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i+1}</td>
+        <td>${escapeHtml(p.firstName+' '+p.lastName)}</td>
+        <td>${p.dob || '-'}</td>
+        <td>${p.phone || '-'}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary me-1 view-patient" data-id="${p.id}">عرض</button>
+          <button class="btn btn-sm btn-outline-secondary me-1 edit-patient" data-id="${p.id}">تعديل</button>
+          <button class="btn btn-sm btn-outline-danger del-patient" data-id="${p.id}">حذف</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    // bind buttons
+    qa('.edit-patient').forEach(b=>b.onclick = e => openPatientModal(e.target.dataset.id));
+    qa('.del-patient').forEach(b=>b.onclick = e => {
+      if(confirm('حذف المريض؟')) {
+        const id = e.target.dataset.id;
+        save('patients', load('patients').filter(x=>x.id!==id));
+        renderPatientsTable(q('#patientsSearch').value);
+      }
+    });
+    qa('.view-patient').forEach(b=>b.onclick = e => {
+      const p = load('patients').find(x=>x.id===e.target.dataset.id);
+      alert(`الاسم: ${p.firstName} ${p.lastName}\nتاريخ الميلاد: ${p.dob || '-'}\nالهاتف: ${p.phone || '-'}\nملاحظات: ${p.notes || '-'}`);
+    });
+  }
+
+  q('#patientsSearch').addEventListener('input', (e)=> renderPatientsTable(e.target.value));
+  q('#addPatientBtn').addEventListener('click', ()=> openPatientModal());
+
+  function openPatientModal(id){
+    const modalEl = q('#patientModal');
+    const m = new bootstrap.Modal(modalEl);
+    q('#patientForm').reset();
+    q('#patientId').value = '';
+    if(id){
+      const p = load('patients').find(x=>x.id===id);
+      q('#patientId').value = p.id;
+      q('#patientFirst').value = p.firstName;
+      q('#patientLast').value = p.lastName;
+      q('#patientDob').value = p.dob || '';
+      q('#patientPhone').value = p.phone || '';
+      q('#patientNotes').value = p.notes || '';
+    }
+    m.show();
+  }
+
+  q('#patientForm').addEventListener('submit', (ev)=>{
+    ev.preventDefault();
+    const id = q('#patientId').value;
+    const obj = {
+      id: id || uid(),
+      firstName: q('#patientFirst').value.trim(),
+      lastName: q('#patientLast').value.trim(),
+      dob: q('#patientDob').value || '',
+      phone: q('#patientPhone').value.trim(),
+      notes: q('#patientNotes').value.trim()
+    };
+    let arr = load('patients');
+    if(id){
+      arr = arr.map(p => p.id===id ? obj : p);
+    } else {
+      arr.push(obj);
+    }
+    save('patients', arr);
+    bootstrap.Modal.getInstance(q('#patientModal')).hide();
+    renderPatientsTable(q('#patientsSearch').value);
+    renderAllStats();
+  });
+
+  // ===== Doctors =====
+  q('#addDoctorBtn').addEventListener('click', ()=> openDoctorModal());
+  function renderDoctorsTable(){
+    const doctors = load('doctors'), depts = load('depts');
+    const tbody = q('#doctorsTable tbody');
+    tbody.innerHTML = '';
+    doctors.forEach((d,i)=>{
+      const dept = depts.find(x=>x.id===d.departmentId);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i+1}</td>
+        <td>${escapeHtml(d.fullName)}</td>
+        <td>${escapeHtml(dept ? dept.name : '-')}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-secondary edit-doctor" data-id="${d.id}">تعديل</button>
+          <button class="btn btn-sm btn-outline-danger del-doctor" data-id="${d.id}">حذف</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    qa('.edit-doctor').forEach(b=>b.onclick = e=> openDoctorModal(e.target.dataset.id));
+    qa('.del-doctor').forEach(b=>b.onclick = e=>{
+      if(confirm('حذف الطبيب؟')) {
+        const id = e.target.dataset.id;
+        // قبل الحذف، تأكد ليس لديه مواعيد أو أعد ربطها
+        save('doctors', load('doctors').filter(x=>x.id!==id));
+        renderDoctorsTable();
+      }
+    });
+    populateDoctorDeptSelect();
+  }
+
+  function openDoctorModal(id){
+    const modalEl = q('#doctorModal'), m = new bootstrap.Modal(modalEl);
+    q('#doctorForm').reset();
+    q('#doctorId').value = '';
+    populateDoctorDeptSelect();
+    if(id){
+      const d = load('doctors').find(x=>x.id===id);
+      q('#doctorId').value = d.id;
+      q('#doctorName').value = d.fullName;
+      q('#doctorDept').value = d.departmentId;
+    }
+    m.show();
+  }
+
+  q('#doctorForm').addEventListener('submit', (ev)=>{
+    ev.preventDefault();
+    const id = q('#doctorId').value;
+    const obj = { id: id || uid(), fullName: q('#doctorName').value.trim(), departmentId: q('#doctorDept').value };
+    let arr = load('doctors');
+    if(id) arr = arr.map(d=> d.id===id ? obj : d); else arr.push(obj);
+    save('doctors', arr);
+    bootstrap.Modal.getInstance(q('#doctorModal')).hide();
+    renderDoctorsTable();
+    renderAllStats();
+  });
+
+  function populateDoctorDeptSelect(){
+    const sel = q('#doctorDept');
+    const depts = load('depts');
+    if(!sel) return;
+    sel.innerHTML = '';
+    depts.forEach(d => sel.insertAdjacentHTML('beforeend', `<option value="${d.id}">${escapeHtml(d.name)}</option>`));
+  }
+
+  // ===== Departments =====
+  q('#addDeptBtn').addEventListener('click', ()=> openDeptModal());
+  function renderDeptsTable(){
+    const depts = load('depts');
+    const tbody = q('#deptTable tbody'); tbody.innerHTML = '';
+    depts.forEach((d,i)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(d.name)}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-secondary edit-dept" data-id="${d.id}">تعديل</button>
+        <button class="btn btn-sm btn-outline-danger del-dept" data-id="${d.id}">حذف</button>
+      </td>`;
+      tbody.appendChild(tr);
+    });
+    qa('.edit-dept').forEach(b=>b.onclick = e => openDeptModal(e.target.dataset.id));
+    qa('.del-dept').forEach(b=>b.onclick = e=>{
+      if(confirm('حذف القسم؟ (سيبقى الأطباء لكن بدون قسم)')) {
+        const id = e.target.dataset.id;
+        // إزالة القسم وربط الأطباء بقسم فارغ
+        let depts = load('depts').filter(x=>x.id!==id);
+        let docs = load('doctors').map(d => d.departmentId===id ? {...d, departmentId: depts[0]?.id || ''} : d);
+        save('depts', depts);
+        save('doctors', docs);
+        renderDeptsTable(); renderDoctorsTable(); renderAllStats();
+      }
+    });
+  }
+
+  function openDeptModal(id){
+    const modalEl = q('#deptModal'), m = new bootstrap.Modal(modalEl);
+    q('#deptForm').reset(); q('#deptId').value = '';
+    if(id){
+      const d = load('depts').find(x=>x.id===id);
+      q('#deptId').value = d.id; q('#deptName').value = d.name;
+    }
+    m.show();
+  }
+
+  q('#deptForm').addEventListener('submit', (ev)=> {
+    ev.preventDefault();
+    const id = q('#deptId').value;
+    const obj = { id: id || uid(), name: q('#deptName').value.trim() };
+    let arr = load('depts');
+    if(id) arr = arr.map(d => d.id===id ? obj : d); else arr.push(obj);
+    save('depts', arr);
+    bootstrap.Modal.getInstance(q('#deptModal')).hide();
+    renderDeptsTable();
+    renderDoctorsTable();
+    renderAllStats();
+  });
+
+  // ===== Appointments =====
+  q('#addAppointmentBtn').addEventListener('click', ()=> openAppointmentModal());
+  function renderAppointmentsTable(filter=''){
+    const appts = load('appointments'), patients = load('patients'), doctors = load('doctors');
+    const tbody = q('#appointmentsTable tbody'); tbody.innerHTML = '';
+    const filtered = appts.filter(a => {
+      const p = patients.find(x=>x.id===a.patientId) || {}; const d = doctors.find(x=>x.id===a.doctorId) || {};
+      const txt = (p.firstName + ' ' + p.lastName + ' ' + d.fullName).toLowerCase();
+      return txt.includes(filter.toLowerCase());
+    }).sort((a,b)=> new Date(a.at) - new Date(b.at));
+    filtered.forEach((a,i)=>{
+      const p = patients.find(x=>x.id===a.patientId) || {firstName:'-', lastName:''};
+      const d = doctors.find(x=>x.id===a.doctorId) || {fullName:'-'};
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${i+1}</td>
+        <td>${escapeHtml(p.firstName+' '+p.lastName)}</td>
+        <td>${escapeHtml(d.fullName)}</td>
+        <td>${new Date(a.at).toLocaleString()}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-secondary edit-appointment" data-id="${a.id}">تعديل</button>
+          <button class="btn btn-sm btn-outline-danger del-appointment" data-id="${a.id}">حذف</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+    qa('.edit-appointment').forEach(b=>b.onclick = e=> openAppointmentModal(e.target.dataset.id));
+    qa('.del-appointment').forEach(b=>b.onclick = e=>{
+      if(confirm('حذف الموعد؟')) {
+        save('appointments', load('appointments').filter(x=>x.id!==e.target.dataset.id));
+        renderAppointmentsTable(q('#appointmentsSearch').value);
+      }
+    });
+    populateAppointmentSelects();
+  }
+
+  q('#appointmentsSearch').addEventListener('input', (e)=> renderAppointmentsTable(e.target.value));
+
+  function populateAppointmentSelects(){
+    const ps = q('#appointmentPatient'), ds = q('#appointmentDoctor');
+    ps.innerHTML = ''; ds.innerHTML = '';
+    load('patients').forEach(p => ps.insertAdjacentHTML('beforeend', `<option value="${p.id}">${escapeHtml(p.firstName+' '+p.lastName)}</option>`));
+    load('doctors').forEach(d => ds.insertAdjacentHTML('beforeend', `<option value="${d.id}">${escapeHtml(d.fullName)}</option>`));
+  }
+
+  function openAppointmentModal(id){
+    const modalEl = q('#appointmentModal'), m = new bootstrap.Modal(modalEl);
+    q('#appointmentForm').reset(); q('#appointmentId').value = '';
+    populateAppointmentSelects();
+    if(id){
+      const a = load('appointments').find(x=>x.id===id);
+      q('#appointmentId').value = a.id;
+      q('#appointmentPatient').value = a.patientId;
+      q('#appointmentDoctor').value = a.doctorId;
+      // convert ISO to local input value
+      q('#appointmentAt').value = new Date(a.at).toISOString().slice(0,16);
+      q('#appointmentNotes').value = a.notes || '';
+    } else {
+      // default: now + 1 day
+      const t = new Date(Date.now()+24*3600*1000);
+      q('#appointmentAt').value = t.toISOString().slice(0,16);
+    }
+    m.show();
+  }
+
+  q('#appointmentForm').addEventListener('submit', (ev)=>{
+    ev.preventDefault();
+    const id = q('#appointmentId').value;
+    const obj = {
+      id: id || uid(),
+      patientId: q('#appointmentPatient').value,
+      doctorId: q('#appointmentDoctor').value,
+      at: new Date(q('#appointmentAt').value).toISOString(),
+      notes: q('#appointmentNotes').value.trim()
+    };
+    let arr = load('appointments');
+    if(id) arr = arr.map(a=> a.id===id ? obj : a); else arr.push(obj);
+    save('appointments', arr);
+    bootstrap.Modal.getInstance(q('#appointmentModal')).hide();
+    renderAppointmentsTable(q('#appointmentsSearch').value);
+    renderAllStats();
+  });
+
+  // ===== Dashboard helpers =====
+  function renderAllStats(){
+    const patients = load('patients').length;
+    const doctors = load('doctors').length;
+    const depts = load('depts').length;
+    const upcoming = load('appointments').filter(a=> new Date(a.at) > new Date()).length;
+    q('#stat-patients').textContent = patients;
+    q('#stat-doctors').textContent = doctors;
+    q('#stat-depts').textContent = depts;
+    q('#stat-ups').textContent = upcoming;
+
+    // upcoming list 7 days
+    const list = load('appointments').filter(a=> {
+      const d = new Date(a.at); const now = new Date(); const diff = (d - now)/(1000*3600*24);
+      return diff >=0 && diff <= 7;
+    }).sort((a,b)=> new Date(a.at) - new Date(b.at));
+    const wrap = q('#upcomingList'); wrap.innerHTML = '';
+    if(list.length===0) wrap.innerHTML = '<div class="small-muted">لا توجد مواعيد خلال 7 أيام القادمة.</div>';
+    else {
+      list.forEach(a=>{
+        const p = load('patients').find(x=>x.id===a.patientId) || {}; const d = load('doctors').find(x=>x.id===a.doctorId) || {};
+        const el = document.createElement('div');
+        el.className = 'border rounded p-2 mb-2';
+        el.innerHTML = `<strong>${escapeHtml(p.firstName+' '+p.lastName)}</strong> — ${escapeHtml(d.fullName||'-')}<br><small class="small-muted">${new Date(a.at).toLocaleString()}</small>`;
+        wrap.appendChild(el);
+      });
+    }
+  }
+
+  // ===== Helpers =====
+  function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // ===== Init =====
+  (function init(){
+    initSeed();
+    // start on dashboard
+    showView('dashboard');
+
+    // wire global add button (by default hidden)
+    q('#addBtn').style.display = 'inline-block';
+    q('#addBtn').onclick = ()=> { /* default does nothing; replaced in showView */ };
+
+    // initial table renders
+    renderPatientsTable();
+    renderDoctorsTable();
+    renderDeptsTable();
+    renderAppointmentsTable();
+  })();
+
+  </script>
+</body>
+</html>
